@@ -472,20 +472,29 @@ BuscarCommand = new RelayCommand(
 - **.NET 8.0 SDK** - [Download](https://dotnet.microsoft.com/download)
 - **Visual Studio 2022** (opcional) o VS Code
 - **Wacom STU SDK 2.15.4** (para captura biométrica)
+- **Microsoft WebView2 Runtime** (requerido para autenticación)
 - **Windows 10/11 x64** - Plataforma objetivo
 
 ### **Instalación**
 ```bash
-# Clonar repositorio
-git clone <repository-url>
+# 1. Clonar repositorio
+git clone https://github.com/codejj26/GedsysFirmas.git
 cd FirmasApp
 
-# Restaurar dependencias
+# 2. Descargar Microsoft Edge WebView2 Runtime (REQUERIDO)
+# OPCIÓN A - Automática (Script PowerShell):
+./Tools/Install-WebView2Runtime.ps1
+
+# OPCIÓN B - Manual:
+# Descargar desde: https://go.microsoft.com/fwlink/?linkid=2124701
+# Instalar: MicrosoftEdgeWebView2RuntimeX64.exe
+
+# 3. Restaurar dependencias NuGet
 dotnet restore
 
-# Configurar appsettings.json con tus credenciales
+# 4. Configurar appsettings.json con tus credenciales
 
-# Ejecutar aplicación
+# 5. Ejecutar aplicación
 dotnet run
 ```
 
@@ -495,6 +504,25 @@ dotnet run
    - `wgssSTU.dll`
    - `libcrypto-1_1-x64.dll`
    - `libssl-1_1-x64.dll`
+
+### **Instalación WebView2 Runtime**
+⚠️ **IMPORTANTE:** El WebView2 Runtime no está incluido en este repositorio debido a limitaciones de tamaño de GitHub (100MB máximo por archivo).
+
+**Opción A: Instalación Automática (Recomendada)**
+```bash
+# Ejecutar el script PowerShell incluido
+.\Tools\Install-WebView2Runtime.ps1
+```
+
+**Opción B: Instalación Manual**
+1. Descargar desde: https://go.microsoft.com/fwlink/?linkid=2124701
+2. Ejecutar: `MicrosoftEdgeWebView2RuntimeX64.exe`
+3. Seguir el instalador (requiere conexión a internet)
+
+**¿Por qué no está incluido?**
+- El archivo `msedge.dll` (315MB) supera el límite de 100MB de GitHub
+- El instalador (194MB) también supera el límite
+- Los scripts `Tools/Install-WebView2Runtime.ps1` y `Tools/Test-WebView2Runtime.ps1` están incluidos para facilitar la instalación
 
 ## 🧪 **Testing y Debugging**
 
