@@ -506,23 +506,21 @@ dotnet run
    - `libssl-1_1-x64.dll`
 
 ### **Instalación WebView2 Runtime**
-⚠️ **IMPORTANTE:** El WebView2 Runtime no está incluido en este repositorio debido a limitaciones de tamaño de GitHub (100MB máximo por archivo).
+⚠️ **IMPORTANTE:** El WebView2 Runtime es **OBLIGATORIO** para la aplicación y no está incluido en este repositorio debido a limitaciones de tamaño de GitHub (100MB máximo por archivo).
 
-**Opción A: Instalación Automática (Recomendada)**
-```bash
-# Ejecutar el script PowerShell incluido
-.\Tools\Install-WebView2Runtime.ps1
-```
+**📘 Guía completa:** `Tools/WEBVIEW2_INSTALLATION.md`
 
-**Opción B: Instalación Manual**
-1. Descargar desde: https://go.microsoft.com/fwlink/?linkid=2124701
-2. Ejecutar: `MicrosoftEdgeWebView2RuntimeX64.exe`
-3. Seguir el instalador (requiere conexión a internet)
+**Resumen rápido:**
+- **Opción A** (Recomendada): `.\Tools\Install-WebView2Runtime.ps1`
+- **Opción B** (Manual): Descargar desde https://go.microsoft.com/fwlink/?linkid=2124701
+- **Opción C** (Desarrolladores): `winget install Microsoft.Edge.WebView2Runtime`
 
 **¿Por qué no está incluido?**
-- El archivo `msedge.dll` (315MB) supera el límite de 100MB de GitHub
+- El archivo `msedge.dll` (315.97 MB) supera el límite de 100MB de GitHub
 - El instalador (194MB) también supera el límite
-- Los scripts `Tools/Install-WebView2Runtime.ps1` y `Tools/Test-WebView2Runtime.ps1` están incluidos para facilitar la instalación
+- Los scripts están incluidos para facilitar la instalación automática
+
+**⚡ Una vez instalado, WebView2 Runtime es compartido por todas las aplicaciones que lo requieran.**
 
 ## 🧪 **Testing y Debugging**
 

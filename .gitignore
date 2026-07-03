@@ -76,3 +76,4 @@ Thumbs.db
 
 ## ARCHIVOS GRANDES DE WEBVIEW2 - Excluir del repositorio
 Tools/WebView2Runtime/
+Tools/*.exe
