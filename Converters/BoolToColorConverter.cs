@@ -48,3 +48,25 @@ public class InverseBoolToVisibilityConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         => value is Visibility.Collapsed;
 }
+
+/// <summary>Suma 1 al valor numérico (para mostrar páginas empezando desde 1 en lugar de 0).</summary>
+public class AddOneConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is int intValue)
+        {
+            return intValue + 1;
+        }
+        return value;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is int intValue)
+        {
+            return intValue - 1;
+        }
+        return value;
+    }
+}

@@ -22,7 +22,7 @@ public partial class GestionFirmaView : Window
                 Dispatcher.Invoke(() =>
                 {
                     TxtStatus.Text = _viewModel.StatusMessage;
-                    ((TxtStatus.Parent as Border)!).Visibility =
+                    TxtStatus.Visibility =
                         string.IsNullOrWhiteSpace(_viewModel.StatusMessage) || _viewModel.StatusMessage == "Listo"
                         ? Visibility.Collapsed : Visibility.Visible;
                 });
@@ -39,7 +39,7 @@ public partial class GestionFirmaView : Window
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Title = $"Gestión de Firmas - {_viewModel.UsuarioActual}";
+                    UpdateWindowTitle();
                     UpdateBotones();
                 });
             }
@@ -55,14 +55,14 @@ public partial class GestionFirmaView : Window
         Title = $"Gestión de Firmas - {username}";
     }
 
-    private void BtnCargarFirma_Click(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Actualiza el título de la ventana cuando cambia el usuario
+    /// </summary>
+    private void UpdateWindowTitle()
     {
-        if (!string.IsNullOrWhiteSpace(_viewModel.UsuarioActual))
+        if (_viewModel.UsuarioActual != null)
         {
-            Task.Run(async () =>
-            {
-                await _viewModel.CargarFirmaAsync();
-            });
+            Title = $"Gestión de Firmas - {_viewModel.UsuarioActual.NombreCompleto}";
         }
     }
 
@@ -101,7 +101,6 @@ public partial class GestionFirmaView : Window
 
     private void UpdateBotones()
     {
-        BtnCargarFirma.IsEnabled = _viewModel.CargarFirmaCommand.CanExecute(null);
         BtnGuardarFirma.IsEnabled = _viewModel.GuardarFirmaCommand.CanExecute(null);
         BtnEliminarFirma.IsEnabled = _viewModel.EliminarFirmaCommand.CanExecute(null);
         BtnLimpiar.IsEnabled = _viewModel.LimpiarFirmaCommand.CanExecute(null);

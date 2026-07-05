@@ -73,7 +73,3 @@ Thumbs.db
 *.bak
 *.old
 *.backup
-
-## ARCHIVOS GRANDES DE WEBVIEW2 - Excluir del repositorio
-Tools/WebView2Runtime/
-Tools/*.exe

@@ -10,7 +10,7 @@ public class FirmaViewModel : INotifyPropertyChanged
 {
     private readonly FirmaService _firmaService;
     private readonly WacomStuService _wacomService;
-    private string? _usuarioActual;
+    private Usuario? _usuarioActual;
     private string? _firmaDataUrl;
     private bool _tieneFirma;
     private bool _isLoading;
@@ -21,14 +21,14 @@ public class FirmaViewModel : INotifyPropertyChanged
         _firmaService = firmaService;
         _wacomService = wacomService;
 
-        CargarFirmaCommand = new RelayCommand(async () => await CargarFirmaAsync(), () => !IsLoading && !string.IsNullOrWhiteSpace(UsuarioActual));
+        CargarFirmaCommand = new RelayCommand(async () => await CargarFirmaAsync(), () => !IsLoading && UsuarioActual != null);
         GuardarFirmaCommand = new RelayCommand(async () => await GuardarFirmaAsync(), () => !IsLoading && !string.IsNullOrWhiteSpace(FirmaDataUrl));
         EliminarFirmaCommand = new RelayCommand(async () => await EliminarFirmaAsync(), () => !IsLoading && TieneFirma);
         LimpiarFirmaCommand = new RelayCommand(() => LimpiarFirma(), () => !IsLoading);
         IniciarWacomCommand = new RelayCommand(async () => await IniciarWacomAsync(), () => !IsLoading);
     }
 
-    public string? UsuarioActual
+    public Usuario? UsuarioActual
     {
         get => _usuarioActual;
         set
@@ -93,7 +93,7 @@ public class FirmaViewModel : INotifyPropertyChanged
     /// </summary>
     public async Task EstablecerUsuarioAsync(string username)
     {
-        UsuarioActual = username;
+        UsuarioActual = new Usuario { CuentaUsuario = username };
         await CargarFirmaAsync();
     }
 
@@ -102,7 +102,7 @@ public class FirmaViewModel : INotifyPropertyChanged
     /// </summary>
     public async Task CargarFirmaAsync()
     {
-        if (string.IsNullOrWhiteSpace(UsuarioActual))
+        if (UsuarioActual == null || string.IsNullOrWhiteSpace(UsuarioActual.CuentaUsuario))
         {
             StatusMessage = "Seleccione un usuario primero";
             return;
@@ -111,19 +111,19 @@ public class FirmaViewModel : INotifyPropertyChanged
         try
         {
             IsLoading = true;
-            StatusMessage = $"Cargando firma de {UsuarioActual}...";
+            StatusMessage = $"Cargando firma de {UsuarioActual.CuentaUsuario}...";
 
-            var firma = await _firmaService.ObtenerFirmaComoDataUrlAsync(UsuarioActual);
+            var firma = await _firmaService.ObtenerFirmaComoDataUrlAsync(UsuarioActual.CuentaUsuario);
 
             if (firma != null)
             {
                 FirmaDataUrl = firma;
-                StatusMessage = $"Firma de {UsuarioActual} cargada";
+                StatusMessage = $"Firma de {UsuarioActual.CuentaUsuario} cargada";
             }
             else
             {
                 FirmaDataUrl = null;
-                StatusMessage = $"{UsuarioActual} no tiene firma almacenada";
+                StatusMessage = $"{UsuarioActual.CuentaUsuario} no tiene firma almacenada";
             }
         }
         catch (Exception ex)
@@ -143,7 +143,7 @@ public class FirmaViewModel : INotifyPropertyChanged
     /// </summary>
     public async Task GuardarFirmaAsync()
     {
-        if (string.IsNullOrWhiteSpace(UsuarioActual))
+        if (UsuarioActual == null || string.IsNullOrWhiteSpace(UsuarioActual.CuentaUsuario))
         {
             StatusMessage = "Seleccione un usuario primero";
             return;
@@ -158,15 +158,18 @@ public class FirmaViewModel : INotifyPropertyChanged
         try
         {
             IsLoading = true;
-            StatusMessage = $"Guardando firma de {UsuarioActual}...";
+            StatusMessage = $"Guardando firma de {UsuarioActual.NombreCompleto}...";
 
-            var resultado = await _firmaService.GuardarFirmaAsync(UsuarioActual, FirmaDataUrl);
+            var resultado = await _firmaService.GuardarFirmaAsync(
+                UsuarioActual.CuentaUsuario,
+                UsuarioActual.NombreCompleto,
+                FirmaDataUrl);
 
             if (resultado != null)
             {
                 TieneFirma = true;
-                StatusMessage = $"Firma guardada exitosamente ({resultado.TamanoBytes} bytes)";
-                MessageBox.Show($"Firma guardada exitosamente para {UsuarioActual}", "Éxito",
+                StatusMessage = "Firma guardada exitosamente";
+                MessageBox.Show($"Firma guardada exitosamente para {UsuarioActual.NombreCompleto}", "Éxito",
                     MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
@@ -191,7 +194,7 @@ public class FirmaViewModel : INotifyPropertyChanged
     /// </summary>
     public async Task EliminarFirmaAsync()
     {
-        if (string.IsNullOrWhiteSpace(UsuarioActual))
+        if (UsuarioActual == null || string.IsNullOrWhiteSpace(UsuarioActual.CuentaUsuario))
         {
             StatusMessage = "Seleccione un usuario primero";
             return;
@@ -200,23 +203,25 @@ public class FirmaViewModel : INotifyPropertyChanged
         try
         {
             IsLoading = true;
-            StatusMessage = $"Eliminando firma de {UsuarioActual}...";
+            StatusMessage = $"Eliminando firma de {UsuarioActual.NombreCompleto}...";
 
             var confirmacion = MessageBox.Show(
-                $"¿Está seguro de eliminar la firma de {UsuarioActual}?",
+                $"¿Está seguro de eliminar la firma de {UsuarioActual.NombreCompleto}?",
                 "Confirmar eliminación",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
             if (confirmacion == MessageBoxResult.Yes)
             {
-                var eliminada = await _firmaService.EliminarFirmaAsync(UsuarioActual);
+                var eliminada = await _firmaService.EliminarFirmaAsync(
+                    UsuarioActual.CuentaUsuario,
+                    UsuarioActual.NombreCompleto);
 
                 if (eliminada)
                 {
                     FirmaDataUrl = null;
                     TieneFirma = false;
-                    StatusMessage = $"Firma de {UsuarioActual} eliminada";
+                    StatusMessage = $"Firma de {UsuarioActual.NombreCompleto} eliminada";
                     MessageBox.Show($"Firma eliminada exitosamente", "Éxito",
                         MessageBoxButton.OK, MessageBoxImage.Information);
                 }

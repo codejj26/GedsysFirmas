@@ -281,4 +281,30 @@ public class KeycloakAuthService
         if (_currentToken == null) return true;
         return DateTime.UtcNow.AddMinutes(5) >= _currentToken.ExpiresAt;
     }
+
+    /// <summary>
+    /// Actualiza la configuración de Keycloak y reinicia la sesión
+    /// </summary>
+    public void UpdateSettings(KeycloakSettings newSettings)
+    {
+        AppLog.Info("KeycloakAuthService", $"Actualizando configuración. Nueva URL: {newSettings.Url}");
+
+        // Limpiar sesión actual
+        Logout();
+
+        // Actualizar configuración
+        _settings.Url = newSettings.Url;
+        _settings.Realm = newSettings.Realm;
+        _settings.ClientId = newSettings.ClientId;
+        _settings.ClientSecret = newSettings.ClientSecret;
+        _settings.RedirectUri = newSettings.RedirectUri;
+        _settings.AuthorizationEndpoint = newSettings.AuthorizationEndpoint;
+        _settings.TokenEndpoint = newSettings.TokenEndpoint;
+        _settings.Scope = newSettings.Scope;
+
+        // Actualizar HttpClient con nueva URL base
+        _httpClient.BaseAddress = new Uri(newSettings.Url);
+
+        AppLog.Info("KeycloakAuthService", "Configuración actualizada exitosamente");
+    }
 }

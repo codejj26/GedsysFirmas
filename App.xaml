@@ -7,5 +7,6 @@
         <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+        <converters:AddOneConverter x:Key="AddOneConverter"/>
     </Application.Resources>
 </Application>

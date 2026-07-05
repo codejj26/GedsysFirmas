@@ -5,10 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:components="clr-namespace:FirmasApp.Components"
         mc:Ignorable="d"
-        Title="Gestión de Firmas"
+        Title="Capturar Firma"
         Height="500"
         Width="700"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="ToolWindow"
+        ResizeMode="NoResize">
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -17,61 +19,41 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Título y selección de usuario -->
-        <Border Grid.Row="0" Background="#E8F5E9" Padding="15" Margin="0,0,0,15" CornerRadius="5">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <TextBlock Text="Gestión de Firmas" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
-                </StackPanel>
-
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button x:Name="BtnCargarFirma"
-                           Content="Cargar Firma"
-                           Width="120" Height="30"
-                           Margin="0,0,5,0"
-                           Click="BtnCargarFirma_Click"/>
-                    <Button x:Name="BtnGuardarFirma"
-                           Content="Guardar"
-                           Width="100" Height="30"
-                           Margin="0,0,5,0"
-                           Click="BtnGuardarFirma_Click"/>
-                    <Button x:Name="BtnEliminarFirma"
-                           Content="Eliminar"
-                           Width="100" Height="30"
-                           Click="BtnEliminarFirma_Click"/>
-                </StackPanel>
-            </Grid>
+        <!-- Título con logo -->
+        <Border Grid.Row="0" Background="#F5F5F5" Padding="15,10" Margin="0,0,0,15" CornerRadius="5">
+            <StackPanel Orientation="Horizontal">
+                <Image Width="32"
+                       Height="32"
+                       Margin="0,0,12,0"
+                       VerticalAlignment="Center"
+                       Source="/Assets/logo.png"
+                       Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                <TextBlock Text="Capturar Firma"
+                          FontSize="18"
+                          FontWeight="SemiBold"
+                          Foreground="#333"
+                          VerticalAlignment="Center"/>
+            </StackPanel>
         </Border>
 
         <!-- Info del usuario actual -->
-        <Border Grid.Row="1" Background="#F0F0F0" Padding="10" Margin="0,0,0,15" CornerRadius="5">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Grid.Column="0" Text="Usuario:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <TextBlock Grid.Column="1"
-                          x:Name="TxtUsuario"
-                          Text="{Binding UsuarioActual}"
-                          FontWeight="Bold"
-                          VerticalAlignment="Center"
-                          Foreground="#2196F3"/>
-
-                <Ellipse Grid.Column="2" Width="12" Height="12" VerticalAlignment="Center" Fill="#FF0000"/>
-            </Grid>
+        <Border Grid.Row="1" Background="#FAFAFA" Padding="12,8" Margin="0,0,0,15" CornerRadius="3" BorderBrush="#E0E0E0" BorderThickness="1">
+            <TextBlock x:Name="TxtUsuario"
+                      Text="{Binding UsuarioActual}"
+                      FontWeight="Medium"
+                      FontSize="14"
+                      Foreground="#555"
+                      VerticalAlignment="Center"/>
         </Border>
 
         <!-- Canvas de firma -->
-        <Border Grid.Row="2" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="5" Padding="10">
+        <Border Grid.Row="2"
+                Background="White"
+                BorderBrush="#D0D0D0"
+                BorderThickness="1"
+                CornerRadius="3"
+                Padding="15">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -79,46 +61,83 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0"
-                          Text="Capture su firma aquí (use mouse o tablet Wacom)"
-                          Foreground="#666"
+                          Text="Firme aquí (use mouse o tableta Wacom)"
+                          Foreground="#888"
+                          FontSize="12"
                           Margin="0,0,0,10"/>
 
                 <components:FirmaCanvas
                     x:Name="FirmaCanvasControl"
                     Grid.Row="1"
-                    Height="250"/>
+                    Height="280"/>
             </Grid>
         </Border>
 
-        <!-- Barra de estado -->
+        <!-- Barra de estado y botones -->
         <Grid Grid.Row="3" Margin="0,15,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0"
-                   Background="#FFF3CD"
-                   BorderBrush="#FFC107"
-                   BorderThickness="1"
-                   CornerRadius="3"
-                   Padding="10,5"
-                   Visibility="Collapsed">
-                <TextBlock x:Name="TxtStatus"
-                          Text="Listo"
-                          Foreground="#856404"/>
-            </Border>
+            <!-- Mensaje de estado -->
+            <TextBlock x:Name="TxtStatus"
+                      Grid.Column="0"
+                      Text="Listo"
+                      Foreground="#666"
+                      FontSize="12"
+                      VerticalAlignment="Center"
+                      Visibility="Collapsed"/>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
+            <!-- Botones de acción - todos alineados a la derecha -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <!-- Botones secundarios -->
                 <Button x:Name="BtnLimpiar"
-                       Content="Limpiar Canvas"
-                       Width="120" Height="30"
-                       Margin="0,0,5,0"
+                       Content="Limpiar"
+                       Width="90" Height="32"
+                       Margin="0,0,8,0"
+                       Background="#F5F5F5"
+                       Foreground="#555"
+                       BorderThickness="1"
+                       BorderBrush="#D0D0D0"
+                       Cursor="Hand"
                        Click="BtnLimpiar_Click"/>
+
                 <Button x:Name="BtnWacom"
-                       Content="Usar Wacom"
-                       Width="120" Height="30"
+                       Content="Usar Dispositivo"
+                       Width="90" Height="32"
+                       Margin="0,0,8,0"
+                       Background="#F5F5F5"
+                       Foreground="#555"
+                       BorderThickness="1"
+                       BorderBrush="#D0D0D0"
+                       Cursor="Hand"
                        Click="BtnWacom_Click"/>
+
+                <!-- Separador visual -->
+                <Border Width="1"
+                       Background="#D0D0D0"
+                       Margin="5,0"/>
+
+                <!-- Botones principales -->
+                <Button x:Name="BtnGuardarFirma"
+                       Content="Guardar"
+                       Width="90" Height="32"
+                       Margin="0,0,8,0"
+                       Background="#2196F3"
+                       Foreground="White"
+                       BorderThickness="0"
+                       Cursor="Hand"
+                       Click="BtnGuardarFirma_Click"/>
+
+                <Button x:Name="BtnEliminarFirma"
+                       Content="Eliminar"
+                       Width="90" Height="32"
+                       Background="#F44336"
+                       Foreground="White"
+                       BorderThickness="0"
+                       Cursor="Hand"
+                       Click="BtnEliminarFirma_Click"/>
             </StackPanel>
         </Grid>
 

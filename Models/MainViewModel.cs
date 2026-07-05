@@ -19,6 +19,10 @@ public class MainViewModel : INotifyPropertyChanged
     private bool _isConnected;
     private bool _isAuthenticated;
     private string _currentUserInfo = string.Empty;
+    private int _currentPage = 0;
+    private int _pageSize = 50;
+    private int _totalPages = 0;
+    private int _totalElements = 0;
 
     public MainViewModel(
         UsuarioService usuarioService,
@@ -33,8 +37,11 @@ public class MainViewModel : INotifyPropertyChanged
         LogoutCommand = new RelayCommand(async () => await LogoutAsync(), () => IsAuthenticated);
         LoadUsuariosCommand = new RelayCommand(async () => await LoadUsuariosAsync(), () => !IsLoading && IsAuthenticated);
         BuscarCommand = new RelayCommand(async () => await BuscarUsuariosAsync(), () => !IsLoading && IsAuthenticated);
-        GestionarFirmaCommand = new RelayCommand(() => GestionarFirma(), () => !IsLoading && IsAuthenticated);
         SeleccionarUsuarioCommand = new RelayCommand(() => { }, () => UsuarioSeleccionado != null);
+        FirstPageCommand = new RelayCommand(async () => await GoToFirstPageAsync(), () => CanGoToPreviousPage());
+        PreviousPageCommand = new RelayCommand(async () => await GoToPreviousPageAsync(), () => CanGoToPreviousPage());
+        NextPageCommand = new RelayCommand(async () => await GoToNextPageAsync(), () => CanGoToNextPage());
+        LastPageCommand = new RelayCommand(async () => await GoToLastPageAsync(), () => CanGoToNextPage());
     }
 
     public event EventHandler<string>? CallbackUrlReceived;
@@ -151,12 +158,65 @@ public class MainViewModel : INotifyPropertyChanged
 
     public int UsuariosSinFirmaCount => UsuariosFiltrados.Count(u => !u.TieneFirma);
 
+    public int CurrentPage
+    {
+        get => _currentPage;
+        set
+        {
+            _currentPage = value;
+            OnPropertyChanged(nameof(CurrentPage));
+            OnPropertyChanged(nameof(PageInfo));
+            UpdatePaginationCommands();
+        }
+    }
+
+    public int PageSize
+    {
+        get => _pageSize;
+        set
+        {
+            _pageSize = value;
+            OnPropertyChanged(nameof(PageSize));
+            OnPropertyChanged(nameof(PageInfo));
+        }
+    }
+
+    public int TotalPages
+    {
+        get => _totalPages;
+        set
+        {
+            _totalPages = value;
+            OnPropertyChanged(nameof(TotalPages));
+            OnPropertyChanged(nameof(PageInfo));
+            UpdatePaginationCommands();
+        }
+    }
+
+    public int TotalElements
+    {
+        get => _totalElements;
+        set
+        {
+            _totalElements = value;
+            OnPropertyChanged(nameof(TotalElements));
+            OnPropertyChanged(nameof(PageInfo));
+        }
+    }
+
+    public string PageInfo => TotalPages > 0
+        ? $"Página {CurrentPage + 1} de {TotalPages} ({TotalElements} total)"
+        : "Sin resultados";
+
     public ICommand LoginCommand { get; }
     public ICommand LogoutCommand { get; }
     public ICommand LoadUsuariosCommand { get; }
     public ICommand BuscarCommand { get; }
-    public ICommand GestionarFirmaCommand { get; }
     public ICommand SeleccionarUsuarioCommand { get; }
+    public ICommand FirstPageCommand { get; }
+    public ICommand PreviousPageCommand { get; }
+    public ICommand NextPageCommand { get; }
+    public ICommand LastPageCommand { get; }
 
     public async Task InitializeAsync(string[] args)
     {
@@ -421,17 +481,21 @@ public class MainViewModel : INotifyPropertyChanged
                 await _keycloakAuth.RefreshTokenAsync();
             }
 
-            var usuarios = await _usuarioService.GetUsuariosAsync();
-            Usuarios = usuarios;
-            UsuariosFiltrados = usuarios;
+            var resultado = await _usuarioService.GetUsuariosAsync(busqueda: null, page: CurrentPage, size: PageSize);
+            Usuarios = resultado.Content;
+            UsuariosFiltrados = resultado.Content;
+            TotalPages = resultado.TotalPages;
+            TotalElements = resultado.TotalElements;
 
-            StatusMessage = $"Se cargaron {Usuarios.Count} usuarios ({UsuariosConFirmaCount} con firma, {UsuariosSinFirmaCount} sin firma)";
+            StatusMessage = $"Página {CurrentPage + 1} de {TotalPages} - {UsuariosFiltrados.Count} usuarios ({UsuariosConFirmaCount} con firma, {UsuariosSinFirmaCount} sin firma)";
         }
         catch (Exception ex)
         {
             AppLog.Error("MainViewModel", $"Error en LoadUsuariosAsync: {ex.Message}", ex);
             StatusMessage = $"Error: {ex.Message}";
             UsuariosFiltrados = new List<Usuario>();
+            TotalPages = 0;
+            TotalElements = 0;
         }
         finally
         {
@@ -448,15 +512,22 @@ public class MainViewModel : INotifyPropertyChanged
 
             if (string.IsNullOrWhiteSpace(Busqueda))
             {
-                UsuariosFiltrados = Usuarios;
+                // Resetear a primera página si no hay búsqueda
+                CurrentPage = 0;
+                await LoadUsuariosAsync();
+                return;
             }
             else
             {
-                var usuarios = await _usuarioService.GetUsuariosAsync(Busqueda);
-                UsuariosFiltrados = usuarios;
+                // Si hay búsqueda, resetear a primera página
+                CurrentPage = 0;
+                var resultado = await _usuarioService.GetUsuariosAsync(Busqueda, CurrentPage, PageSize);
+                UsuariosFiltrados = resultado.Content;
+                TotalPages = resultado.TotalPages;
+                TotalElements = resultado.TotalElements;
             }
 
-            StatusMessage = $"{UsuariosFiltrados.Count} usuarios encontrados ({UsuariosConFirmaCount} con firma, {UsuariosSinFirmaCount} sin firma)";
+            StatusMessage = $"Página {CurrentPage + 1} de {TotalPages} - {UsuariosFiltrados.Count} usuarios encontrados ({UsuariosConFirmaCount} con firma, {UsuariosSinFirmaCount} sin firma)";
         }
         catch (Exception ex)
         {
@@ -468,34 +539,55 @@ public class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    private void GestionarFirma()
+    private bool CanGoToPreviousPage() => !IsLoading && IsAuthenticated && CurrentPage > 0;
+    private bool CanGoToNextPage() => !IsLoading && IsAuthenticated && CurrentPage < TotalPages - 1;
+
+    private async Task GoToFirstPageAsync()
     {
-        try
+        if (CurrentPage == 0) return;
+        CurrentPage = 0;
+        await LoadPageAsync();
+    }
+
+    private async Task GoToPreviousPageAsync()
+    {
+        if (CurrentPage == 0) return;
+        CurrentPage--;
+        await LoadPageAsync();
+    }
+
+    private async Task GoToNextPageAsync()
+    {
+        if (CurrentPage >= TotalPages - 1) return;
+        CurrentPage++;
+        await LoadPageAsync();
+    }
+
+    private async Task GoToLastPageAsync()
+    {
+        if (TotalPages == 0) return;
+        CurrentPage = TotalPages - 1;
+        await LoadPageAsync();
+    }
+
+    private async Task LoadPageAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Busqueda))
         {
-            var gestorFirma = App.ServiceProvider?.GetService(typeof(FirmasApp.ViewModels.FirmaViewModel)) as FirmasApp.ViewModels.FirmaViewModel
-                ?? throw new InvalidOperationException("No se pudo resolver FirmaViewModel");
-
-            gestorFirma.UsuarioActual = null;
-            gestorFirma.FirmaDataUrl = null;
-
-            var gestionFirmaView = new Views.GestionFirmaView(gestorFirma);
-
-            if (!string.IsNullOrWhiteSpace(CurrentUserInfo))
-            {
-                var match = System.Text.RegularExpressions.Regex.Match(CurrentUserInfo, @"\(([^)]+)\)");
-                if (match.Success)
-                {
-                    var username = match.Groups[1].Value;
-                    _ = gestionFirmaView.EstablecerUsuarioAsync(username);
-                }
-            }
-
-            gestionFirmaView.ShowDialog();
+            await LoadUsuariosAsync();
         }
-        catch (Exception ex)
+        else
         {
-            StatusMessage = $"Error abriendo gestión de firmas: {ex.Message}";
+            await BuscarUsuariosAsync();
         }
+    }
+
+    private void UpdatePaginationCommands()
+    {
+        ((RelayCommand)FirstPageCommand).RaiseCanExecuteChanged();
+        ((RelayCommand)PreviousPageCommand).RaiseCanExecuteChanged();
+        ((RelayCommand)NextPageCommand).RaiseCanExecuteChanged();
+        ((RelayCommand)LastPageCommand).RaiseCanExecuteChanged();
     }
 
     private void UpdateCommands()
@@ -504,7 +596,22 @@ public class MainViewModel : INotifyPropertyChanged
         ((RelayCommand)LogoutCommand).RaiseCanExecuteChanged();
         ((RelayCommand)LoadUsuariosCommand).RaiseCanExecuteChanged();
         ((RelayCommand)BuscarCommand).RaiseCanExecuteChanged();
-        ((RelayCommand)GestionarFirmaCommand).RaiseCanExecuteChanged();
+        UpdatePaginationCommands();
+    }
+
+    public void UpdateKeycloakSettings(KeycloakSettings newSettings)
+    {
+        try
+        {
+            AppLog.Info("MainViewModel", $"Actualizando configuración de Keycloak: {newSettings.Url}");
+            _keycloakAuth.UpdateSettings(newSettings);
+            StatusMessage = "Configuración de Keycloak actualizada exitosamente";
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("MainViewModel", $"Error actualizando configuración: {ex.Message}", ex);
+            StatusMessage = $"Error actualizando configuración: {ex.Message}";
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

@@ -35,65 +35,15 @@ public partial class WebLoginDialog : Window
         {
             TxtStatus.Text = "Inicializando navegador embebido...";
 
-            var userData = System.IO.Path.Combine(
+            var userDataFolder = System.IO.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "FirmasApp", "WebView2");
-            System.IO.Directory.CreateDirectory(userData);
+            AppLog.Info("WebLogin", $"UserData folder: {userDataFolder}");
+            System.IO.Directory.CreateDirectory(userDataFolder);
 
-            // Buscar runtime bundled (Fixed Version). Si no existe, intentar runtime del sistema.
-            // La estructura de carpetas del output replica la fuente Tools\...
-            string[] candidatePaths =
-            {
-                System.IO.Path.Combine(AppContext.BaseDirectory, "WebView2Runtime",
-                    "Microsoft.WebView2.FixedVersionRuntime.150.0.4078.48.x64"),
-                System.IO.Path.Combine(AppContext.BaseDirectory, "WebView2Runtime", "Tools",
-                    "WebView2Runtime", "Microsoft.WebView2.FixedVersionRuntime.150.0.4078.48.x64"),
-            };
-            var bundledRuntime = candidatePaths.FirstOrDefault(System.IO.Directory.Exists);
-            var useBundled = !string.IsNullOrEmpty(bundledRuntime) &&
-                            System.IO.File.Exists(System.IO.Path.Combine(bundledRuntime, "msedgewebview2.exe"));
-            if (useBundled)
-            {
-                AppLog.Info("WebLogin", $"Usando WebView2 Fixed Version bundled: {bundledRuntime}");
-            }
-            else
-            {
-                AppLog.Warn("WebLogin", "WebView2 Fixed Version bundled no encontrado; se usara runtime del sistema");
-            }
-
-            if (useBundled)
-            {
-                AppLog.Info("WebLogin", $"Usando WebView2 Fixed Version bundled: {bundledRuntime}");
-            }
-            else
-            {
-                AppLog.Warn("WebLogin", "WebView2 Fixed Version bundled no encontrado; se usara runtime del sistema");
-            }
-
-            CoreWebView2Environment env;
-            try
-            {
-                if (useBundled)
-                {
-                    env = await CoreWebView2Environment.CreateAsync(bundledRuntime, userData, null);
-                }
-                else
-                {
-                    try
-                    {
-                        env = await CoreWebView2Environment.CreateAsync(userData);
-                    }
-                    catch (MissingMethodException)
-                    {
-                        env = await CoreWebView2Environment.CreateAsync(null, userData, null);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                AppLog.Warn("WebLogin", $"CreateAsync fallo ({ex.GetType().Name}); reintentando con firma sin opciones");
-                env = await CoreWebView2Environment.CreateAsync(userData);
-            }
+            // Inicializar WebView2 con runtime del sistema y userData folder específico
+            CoreWebView2Environment env = await CoreWebView2Environment.CreateAsync(
+                null, userDataFolder, null);
 
             await WebView.EnsureCoreWebView2Async(env);
 

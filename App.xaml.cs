@@ -12,7 +12,7 @@ namespace FirmasApp;
 public partial class App : Application
 {
     public static IServiceProvider? ServiceProvider { get; private set; }
-    public IConfiguration? Configuration { get; private set; }
+    public static IConfiguration? Configuration { get; private set; }
     private const string MutexName = "Global\\FirmasAppSingleInstance";
     private const string PipeName = "FirmasAppCallback";
     private Mutex? _mutex;
@@ -268,6 +268,7 @@ public partial class App : Application
         services.Configure<GedsysApiSettings>(Configuration!.GetSection("GedsysApi"));
         services.Configure<WacomStuSettings>(Configuration.GetSection("WacomStu"));
         services.Configure<KeycloakSettings>(Configuration.GetSection("Keycloak"));
+        services.Configure<SupabaseSettings>(Configuration.GetSection("Supabase"));
 
         services.AddSingleton<KeycloakAuthService>(sp =>
             new KeycloakAuthService(
@@ -288,14 +289,45 @@ public partial class App : Application
                 sp.GetRequiredService<KeycloakAuthService>(),
                 sp.GetRequiredService<FirmaService>()));
 
+        // Registrar servicios de BD local y sincronización
+        services.AddSingleton<LocalDbService>();
+        services.AddSingleton<QueueService>();
+        services.AddSingleton<SyncCoordinatorService>(sp =>
+            new SyncCoordinatorService(
+                sp.GetRequiredService<QueueService>(),
+                sp.GetRequiredService<LocalDbService>(),
+                Configuration.GetSection("GedsysApi").Get<GedsysApiSettings>() ?? new GedsysApiSettings(),
+                sp.GetRequiredService<KeycloakAuthService>()));
+
+        // Registrar servicios de cloud (Supabase) - solo si está habilitado
+        var supabaseSettings = Configuration.GetSection("Supabase").Get<SupabaseSettings>();
+        if (supabaseSettings != null && supabaseSettings.Enabled && supabaseSettings.IsValid())
+        {
+            services.AddSingleton<CloudDbService>(sp =>
+                new CloudDbService(supabaseSettings.BuildConnectionString()));
+
+            services.AddSingleton<CloudSyncService>();
+
+            AppLog.Info("App", "Servicios de Supabase habilitados");
+        }
+        else
+        {
+            AppLog.Info("App", "Servicios de Supabase deshabilitados (configuración incompleta)");
+        }
+
         services.AddTransient(sp =>
             new FirmaService(
                 Configuration.GetSection("GedsysApi").Get<GedsysApiSettings>()
                 ?? new GedsysApiSettings(),
-                sp.GetRequiredService<KeycloakAuthService>()));
+                sp.GetRequiredService<KeycloakAuthService>(),
+                sp.GetRequiredService<SyncCoordinatorService>(),
+                sp.GetRequiredService<LocalDbService>()));
 
         services.AddTransient<MainViewModel>();
         services.AddTransient<ViewModels.FirmaViewModel>();
-        services.AddTransient<MainWindow>();
+        services.AddTransient(sp => new MainWindow(
+            sp.GetRequiredService<MainViewModel>(),
+            sp.GetRequiredService<FirmaService>(),
+            sp.GetRequiredService<IOptions<KeycloakSettings>>()));
     }
 }

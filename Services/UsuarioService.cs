@@ -45,11 +45,11 @@ public class UsuarioService
         return true;
     }
 
-    public async Task<List<Usuario>> GetUsuariosAsync(string? busqueda = null)
+    public async Task<PaginatedResult<Usuario>> GetUsuariosAsync(string? busqueda = null, int page = 0, int size = 50)
     {
         try
         {
-            Console.WriteLine("[DEBUG UsuarioService] GetUsuariosAsync iniciado");
+            Console.WriteLine($"[DEBUG UsuarioService] GetUsuariosAsync iniciado - page: {page}, size: {size}");
 
             if (!await AddAuthHeaderAsync())
             {
@@ -67,9 +67,9 @@ public class UsuarioService
                 queryParams.Add($"nombres={Uri.EscapeDataString(busqueda)}");
             }
 
-            // Agregar parámetros de paginación para obtener todos los resultados
-            queryParams.Add("page=0");
-            queryParams.Add("size=100"); // Obtener hasta 100 usuarios en una página
+            // Agregar parámetros de paginación
+            queryParams.Add($"page={page}");
+            queryParams.Add($"size={size}");
 
             if (queryParams.Any())
             {
@@ -86,9 +86,10 @@ public class UsuarioService
                 Console.WriteLine($"[DEBUG UsuarioService] Response content length: {content.Length}");
 
                 // La API devuelve una respuesta paginada: { content: [...], totalElements: X, ... }
-                var paginatedResult = JsonSerializer.Deserialize<PaginatedResult<Usuario>>(content, _jsonOptions);
+                var paginatedResult = JsonSerializer.Deserialize<PaginatedResult<Usuario>>(content, _jsonOptions)
+                    ?? new PaginatedResult<Usuario>();
 
-                var usuarios = paginatedResult?.Content ?? new List<Usuario>();
+                var usuarios = paginatedResult.Content ?? new List<Usuario>();
                 Console.WriteLine($"[DEBUG UsuarioService] Usuarios deserializados: {usuarios.Count}");
 
                 if (usuarios.Any())
@@ -99,8 +100,13 @@ public class UsuarioService
                     Console.WriteLine($"[DEBUG UsuarioService] Verificación de firmas completada");
                 }
 
-                Console.WriteLine($"[DEBUG UsuarioService] Retornando {usuarios.Count} usuarios");
-                return usuarios;
+                // Actualizar el contenido con usuarios verificados
+                paginatedResult.Content = usuarios;
+                paginatedResult.Page = page;
+                paginatedResult.Size = size;
+
+                Console.WriteLine($"[DEBUG UsuarioService] Retornando {usuarios.Count} usuarios, total: {paginatedResult.TotalElements}");
+                return paginatedResult;
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {

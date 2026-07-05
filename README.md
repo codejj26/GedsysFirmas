@@ -11,6 +11,12 @@ FirmasApp/
 ├── 📁 Components/              # Componentes UI reutilizables
 │   ├── FirmaCanvas.xaml       # Canvas para captura de firma con mouse
 │   └── FirmaCanvas_Simple.xaml # Canvas simplificado
+├── 📁 docs/                    # Documentación del proyecto
+│   ├── CONFIGURACION_KEYCLOAK.md
+│   ├── LOGOS_GUIDE.md
+│   ├── PAGINACION.md
+│   ├── PLAN_COLA_FIRMAS.md
+│   └── WACOM_IMPLEMENTATION_SUMMARY.md
 ├── 📁 Models/                  # Modelos de datos y ViewModels
 │   ├── MainViewModel.cs       # ViewModel principal (MVVM)
 │   ├── Usuario.cs              # Modelo de usuario
@@ -27,12 +33,19 @@ FirmasApp/
 │   ├── KeycloakAuthService.cs  # Autenticación OAuth/OIDC
 │   ├── ProtocolRegistrationService.cs # Registro de protocolos
 │   ├── HttpCallbackService.cs  # Manejo de callbacks HTTP
+│   ├── LocalDbService.cs       # Base de datos SQLite local
+│   ├── QueueService.cs         # Cola de sincronización offline
+│   ├── SyncCoordinatorService.cs # Coordinador de sincronización
+│   ├── CloudDbService.cs       # Base de datos PostgreSQL (Supabase)
+│   ├── CloudSyncService.cs     # Sincronización con nube
 │   └── AppLog.cs               # Sistema de logging
 ├── 📁 ViewModels/              # ViewModels específicos
 │   └── FirmaViewModel.cs       # ViewModel para gestión de firmas
 ├── 📁 Views/                   # Vistas XAML
 │   ├── LoginView.xaml          # Vista de login
 │   ├── GestionFirmaView.xaml   # Vista de gestión de firmas
+│   ├── KeycloakSettingsDialog.xaml # Configuración Keycloak
+│   ├── SupabaseSettingsDialog.xaml # Configuración Supabase
 │   ├── WebLoginDialog.xaml     # Diálogo de login web
 │   ├── WaitingForAuthDialog.xaml # Diálogo de espera
 │   └── PasteUrlDialog.xaml     # Diálogo para pegar URL manual
@@ -41,8 +54,6 @@ FirmasApp/
 │   ├── libcrypto-1_1-x64.dll  # OpenSSL dependency
 │   ├── libssl-1_1-x64.dll     # OpenSSL dependency
 │   └── README.txt              # Instrucciones de instalación
-├── 📁 Tools/                   # Herramientas adicionales
-│   └── WebView2Runtime/        # Runtime WebView2 incluido
 ├── App.xaml                    # Aplicación principal
 ├── App.xaml.cs                 # Startup y DI configuration
 ├── MainWindow.xaml            # Ventana principal
@@ -483,11 +494,12 @@ cd FirmasApp
 
 # 2. Descargar Microsoft Edge WebView2 Runtime (REQUERIDO)
 # OPCIÓN A - Automática (Script PowerShell):
-./Tools/Install-WebView2Runtime.ps1
+# OPCIÓN A - Recomendada (winget):
+winget install Microsoft.Edge.WebView2Runtime
 
 # OPCIÓN B - Manual:
 # Descargar desde: https://go.microsoft.com/fwlink/?linkid=2124701
-# Instalar: MicrosoftEdgeWebView2RuntimeX64.exe
+# Ejecutar: MicrosoftEdgeWebView2RuntimeX64.exe
 
 # 3. Restaurar dependencias NuGet
 dotnet restore
@@ -508,12 +520,12 @@ dotnet run
 ### **Instalación WebView2 Runtime**
 ⚠️ **IMPORTANTE:** El WebView2 Runtime es **OBLIGATORIO** para la aplicación y no está incluido en este repositorio debido a limitaciones de tamaño de GitHub (100MB máximo por archivo).
 
-**📘 Guía completa:** `Tools/WEBVIEW2_INSTALLATION.md`
+**📘 Guía completa:** `docs/WEBVIEW2_INSTALLATION.md`
 
 **Resumen rápido:**
-- **Opción A** (Recomendada): `.\Tools\Install-WebView2Runtime.ps1`
+- **Opción A** (Recomendada): `winget install Microsoft.Edge.WebView2Runtime`
 - **Opción B** (Manual): Descargar desde https://go.microsoft.com/fwlink/?linkid=2124701
-- **Opción C** (Desarrolladores): `winget install Microsoft.Edge.WebView2Runtime`
+- **Opción C** (Microsoft Store): Buscar "Microsoft Edge WebView2 Runtime"
 
 **¿Por qué no está incluido?**
 - El archivo `msedge.dll` (315.97 MB) supera el límite de 100MB de GitHub
@@ -625,7 +637,11 @@ private async Task<bool> AddAuthHeaderAsync()
 
 ## 📚 **Documentación Adicional**
 
-- `WACOM_IMPLEMENTATION_SUMMARY.md` - Guía detallada de implementación Wacom
+- `docs/WACOM_IMPLEMENTATION_SUMMARY.md` - Guía detallada de implementación Wacom
+- `docs/CONFIGURACION_KEYCLOAK.md` - Configuración completa de Keycloak
+- `docs/PAGINACION.md` - Implementación de paginación de usuarios
+- `docs/PLAN_COLA_FIRMAS.md` - Sistema de cola offline-first
+- `docs/WEBVIEW2_INSTALLATION.md` - Guía de instalación WebView2
 - `libs/README.txt` - Instrucciones de instalación SDK Wacom
 - `appsettings.json` - Configuración con comentarios
 - Code comments XML en APIs públicas

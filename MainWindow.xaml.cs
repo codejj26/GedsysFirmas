@@ -10,7 +10,10 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using FirmasApp.Models;
 using FirmasApp.Services;
+using FirmasApp.Views;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace FirmasApp;
 
@@ -21,12 +24,14 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel;
     private readonly FirmaService _firmaService;
+    private readonly KeycloakSettings _keycloakSettings;
 
-    public MainWindow(MainViewModel viewModel, FirmaService firmaService)
+    public MainWindow(MainViewModel viewModel, FirmaService firmaService, IOptions<KeycloakSettings> keycloakSettings)
     {
         InitializeComponent();
         _viewModel = viewModel;
         _firmaService = firmaService;
+        _keycloakSettings = keycloakSettings.Value;
         DataContext = _viewModel;
     }
 
@@ -112,7 +117,7 @@ public partial class MainWindow : Window
 
             if (confirmacion == MessageBoxResult.Yes)
             {
-                var eliminada = await _firmaService.EliminarFirmaAsync(username);
+                var eliminada = await _firmaService.EliminarFirmaAsync(username, usuario.NombreCompleto);
 
                 if (eliminada)
                 {
@@ -161,5 +166,64 @@ public partial class MainWindow : Window
         }
 
         return null;
+    }
+
+    private void BtnConfigureKeycloak_Click(object sender, RoutedEventArgs e)
+    {
+        var settingsDialog = new KeycloakSettingsDialog(_keycloakSettings);
+        var result = settingsDialog.ShowDialog();
+
+        if (result == true && settingsDialog.SavedSettings != null)
+        {
+            _viewModel.UpdateKeycloakSettings(settingsDialog.SavedSettings);
+            MessageBox.Show(
+                "Configuración de Keycloak actualizada exitosamente.\n\n" +
+                "La nueva configuración se usará en el próximo inicio de sesión.",
+                "Configuración Guardada",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+    }
+
+    private void BtnConfigureSupabase_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var supabaseSettings = App.ServiceProvider?.GetService<IOptions<SupabaseSettings>>();
+            if (supabaseSettings != null)
+            {
+                var settingsDialog = new Views.SupabaseSettingsDialog(
+                    App.Configuration!,
+                    supabaseSettings);
+
+                var result = settingsDialog.ShowDialog();
+
+                if (result == true)
+                {
+                    MessageBox.Show(
+                        "Configuración de Supabase actualizada exitosamente.\n\n" +
+                        "La sincronización cloud se habilitará al reiniciar la aplicación.",
+                        "Configuración Guardada",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            else
+            {
+                MessageBox.Show(
+                    "No se pudo cargar el servicio de configuración de Supabase.",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Error al abrir configuración de Supabase: {ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 }

@@ -3,7 +3,6 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <PlatformTarget>x64</PlatformTarget>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
@@ -16,9 +15,23 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
+  <!-- Configuración de plataformas: Debug=x86 (desarrollo local), Release=x64 (producción) -->
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <PlatformTarget>x86</PlatformTarget>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
+
   <!-- Central Package Management para consistencia -->
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="8.0.0">
+      <IncludeAssets>all</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0">
       <IncludeAssets>all</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0">
@@ -36,7 +49,13 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0">
       <IncludeAssets>all</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2651.64">
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40">
+      <IncludeAssets>all</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql" Version="8.0.3">
+      <IncludeAssets>all</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Dapper" Version="2.1.1">
       <IncludeAssets>all</IncludeAssets>
     </PackageReference>
   </ItemGroup>
@@ -45,14 +64,6 @@
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <!-- Runtime WebView2 -->
-  <ItemGroup>
-    <None Update="Tools\WebView2Runtime\Microsoft.WebView2.FixedVersionRuntime.150.0.4078.48.x64\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>WebView2Runtime\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>
 
@@ -67,6 +78,11 @@
     <None Update="libs\libssl-1_1-x64.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <!-- Assets como recursos -->
+  <ItemGroup>
+    <Resource Include="assets\**\*.*" />
   </ItemGroup>
 
 </Project>
