@@ -8,5 +8,6 @@
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
         <converters:AddOneConverter x:Key="AddOneConverter"/>
+        <converters:SessionBackgroundConverter x:Key="SessionBackgroundConverter"/>
     </Application.Resources>
 </Application>

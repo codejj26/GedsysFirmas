@@ -45,7 +45,7 @@
 
         <!-- Auth Header -->
         <Border Grid.Row="1"
-                Background="#E8F5E9"
+                Background="{Binding SessionExpiringSoon, Converter={StaticResource SessionBackgroundConverter}}"
                 Padding="15"
                 Margin="0,0,0,10"
                 CornerRadius="5">
@@ -68,30 +68,31 @@
                         <Run Text="Usuario: "/>
                         <Run Text="{Binding CurrentUserInfo, Mode=OneWay}" FontWeight="Bold"/>
                     </TextBlock>
+
+                    <!-- Advertencia de sesión por expirar -->
+                    <TextBlock VerticalAlignment="Center"
+                               Margin="15,0,0,0"
+                               FontWeight="Bold"
+                               Foreground="#F44336"
+                               Visibility="{Binding SessionExpiringSoon, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Run Text="⚠️ "/>
+                        <Run Text="Sesión por expirar"/>
+                    </TextBlock>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Content="☁️ Supabase"
-                            x:Name="BtnConfigureSupabase"
-                            Width="120"
-                            Height="30"
-                            Margin="0,0,10,0"
-                            Background="#9C27B0"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Cursor="Hand"
-                            Click="BtnConfigureSupabase_Click"
-                            ToolTip="Configurar sincronización cloud"/>
-                    <Button Content="⚙️ Configurar"
-                            x:Name="BtnConfigureKeycloak"
-                            Width="120"
+                    <Button Content="⚙️ Configuración"
+                            x:Name="BtnConfigureGeneral"
+                            Width="140"
                             Height="30"
                             Margin="0,0,10,0"
                             Background="#FF9800"
                             Foreground="White"
                             BorderThickness="0"
                             Cursor="Hand"
-                            Click="BtnConfigureKeycloak_Click"/>
+                            Click="BtnConfigureGeneral_Click"
+                            Visibility="{Binding IsAuthenticated, Converter={StaticResource InverseBoolToVisibilityConverter}}"
+                            ToolTip="Configurar autenticación, API y sincronización cloud"/>
                     <Button Content="🔐 Iniciar Sesión"
                             Command="{Binding LoginCommand}"
                             Width="120"

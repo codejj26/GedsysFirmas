@@ -25,13 +25,22 @@ public partial class MainWindow : Window
     private readonly MainViewModel _viewModel;
     private readonly FirmaService _firmaService;
     private readonly KeycloakSettings _keycloakSettings;
+    private readonly GedsysApiSettings _apiSettings;
+    private readonly SupabaseSettings _supabaseSettings;
 
-    public MainWindow(MainViewModel viewModel, FirmaService firmaService, IOptions<KeycloakSettings> keycloakSettings)
+    public MainWindow(
+        MainViewModel viewModel,
+        FirmaService firmaService,
+        IOptions<KeycloakSettings> keycloakSettings,
+        IOptions<GedsysApiSettings> apiSettings,
+        IOptions<SupabaseSettings> supabaseSettings)
     {
         InitializeComponent();
         _viewModel = viewModel;
         _firmaService = firmaService;
         _keycloakSettings = keycloakSettings.Value;
+        _apiSettings = apiSettings.Value;
+        _supabaseSettings = supabaseSettings.Value;
         DataContext = _viewModel;
     }
 
@@ -168,62 +177,30 @@ public partial class MainWindow : Window
         return null;
     }
 
-    private void BtnConfigureKeycloak_Click(object sender, RoutedEventArgs e)
+    private void BtnConfigureGeneral_Click(object sender, RoutedEventArgs e)
     {
-        var settingsDialog = new KeycloakSettingsDialog(_keycloakSettings);
+        var settingsDialog = new GeneralSettingsDialog(
+            _keycloakSettings,
+            _apiSettings,
+            _supabaseSettings);
+
         var result = settingsDialog.ShowDialog();
 
-        if (result == true && settingsDialog.SavedSettings != null)
+        if (result == true)
         {
-            _viewModel.UpdateKeycloakSettings(settingsDialog.SavedSettings);
+            // Actualizar configuración de Keycloak si se modificó
+            if (settingsDialog.SavedKeycloakSettings != null)
+            {
+                _viewModel.UpdateKeycloakSettings(settingsDialog.SavedKeycloakSettings);
+            }
+
+            // Nota: Las configuraciones de API y Supabase requieren reinicio
             MessageBox.Show(
-                "Configuración de Keycloak actualizada exitosamente.\n\n" +
+                "Configuración general actualizada exitosamente.\n\n" +
                 "La nueva configuración se usará en el próximo inicio de sesión.",
                 "Configuración Guardada",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
-        }
-    }
-
-    private void BtnConfigureSupabase_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var supabaseSettings = App.ServiceProvider?.GetService<IOptions<SupabaseSettings>>();
-            if (supabaseSettings != null)
-            {
-                var settingsDialog = new Views.SupabaseSettingsDialog(
-                    App.Configuration!,
-                    supabaseSettings);
-
-                var result = settingsDialog.ShowDialog();
-
-                if (result == true)
-                {
-                    MessageBox.Show(
-                        "Configuración de Supabase actualizada exitosamente.\n\n" +
-                        "La sincronización cloud se habilitará al reiniciar la aplicación.",
-                        "Configuración Guardada",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                }
-            }
-            else
-            {
-                MessageBox.Show(
-                    "No se pudo cargar el servicio de configuración de Supabase.",
-                    "Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                $"Error al abrir configuración de Supabase: {ex.Message}",
-                "Error",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
         }
     }
 }

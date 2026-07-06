@@ -17,7 +17,7 @@ public class Usuario
     // Helper properties for backward compatibility
     public string NombreCompleto => $"{Nombres} {Apellidos}".Trim();
     public string Documento => Identificacion?.Numero ?? string.Empty;
-    public string EstadoFirma => TieneFirma ? "✓ Firmado" : "Sin firma";
+    public string EstadoFirma => TieneFirma ? "✓ Con firma" : "Sin firma";
 }
 
 public class Identificacion

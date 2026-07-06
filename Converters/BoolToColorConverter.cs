@@ -70,3 +70,22 @@ public class AddOneConverter : IValueConverter
         return value;
     }
 }
+
+/// <summary>Convierte el estado de sesión en un color de fondo: expirando → amarillo, normal → verde claro.</summary>
+public class SessionBackgroundConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        var isExpiring = value is true;
+
+        if (targetType == typeof(Color))
+        {
+            return isExpiring ? Color.FromRgb(255, 243, 224) : Color.FromRgb(232, 245, 233); // Amarillo claro : Verde claro
+        }
+
+        return new SolidColorBrush(isExpiring ? Color.FromRgb(255, 243, 224) : Color.FromRgb(232, 245, 233));
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}

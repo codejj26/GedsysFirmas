@@ -307,7 +307,13 @@ public partial class App : Application
                 new CloudDbService(supabaseSettings.BuildConnectionString()));
 
             services.AddSingleton<CloudSyncService>();
+        }
 
+        // Registrar servicio de gestión de sesiones
+        services.AddSingleton<SessionManagerService>();
+
+        if (supabaseSettings != null && supabaseSettings.Enabled && supabaseSettings.IsValid())
+        {
             AppLog.Info("App", "Servicios de Supabase habilitados");
         }
         else
@@ -328,6 +334,8 @@ public partial class App : Application
         services.AddTransient(sp => new MainWindow(
             sp.GetRequiredService<MainViewModel>(),
             sp.GetRequiredService<FirmaService>(),
-            sp.GetRequiredService<IOptions<KeycloakSettings>>()));
+            sp.GetRequiredService<IOptions<KeycloakSettings>>(),
+            sp.GetRequiredService<IOptions<GedsysApiSettings>>(),
+            sp.GetRequiredService<IOptions<SupabaseSettings>>()));
     }
 }

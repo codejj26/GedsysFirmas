@@ -10,6 +10,7 @@ public class MainViewModel : INotifyPropertyChanged
     private readonly UsuarioService _usuarioService;
     private readonly KeycloakAuthService _keycloakAuth;
     private readonly ProtocolRegistrationService _protocolService;
+    private readonly SessionManagerService _sessionManager;
     private List<Usuario> _usuarios = new();
     private List<Usuario> _usuariosFiltrados = new();
     private Usuario? _usuarioSeleccionado;
@@ -19,6 +20,7 @@ public class MainViewModel : INotifyPropertyChanged
     private bool _isConnected;
     private bool _isAuthenticated;
     private string _currentUserInfo = string.Empty;
+    private bool _sessionExpiringSoon;
     private int _currentPage = 0;
     private int _pageSize = 50;
     private int _totalPages = 0;
@@ -27,11 +29,18 @@ public class MainViewModel : INotifyPropertyChanged
     public MainViewModel(
         UsuarioService usuarioService,
         KeycloakAuthService keycloakAuth,
-        ProtocolRegistrationService protocolService)
+        ProtocolRegistrationService protocolService,
+        SessionManagerService sessionManager)
     {
         _usuarioService = usuarioService;
         _keycloakAuth = keycloakAuth;
         _protocolService = protocolService;
+        _sessionManager = sessionManager;
+
+        // Suscribir a eventos del gestor de sesión
+        _sessionManager.SessionExpiringSoon += OnSessionExpiringSoon;
+        _sessionManager.SessionRefreshed += OnSessionRefreshed;
+        _sessionManager.SessionExpired += OnSessionExpired;
 
         LoginCommand = new RelayCommand(async () => await LoginAsync(), () => !IsLoading);
         LogoutCommand = new RelayCommand(async () => await LogoutAsync(), () => IsAuthenticated);
@@ -154,6 +163,16 @@ public class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool SessionExpiringSoon
+    {
+        get => _sessionExpiringSoon;
+        set
+        {
+            _sessionExpiringSoon = value;
+            OnPropertyChanged(nameof(SessionExpiringSoon));
+        }
+    }
+
     public int UsuariosConFirmaCount => UsuariosFiltrados.Count(u => u.TieneFirma);
 
     public int UsuariosSinFirmaCount => UsuariosFiltrados.Count(u => !u.TieneFirma);
@@ -208,6 +227,55 @@ public class MainViewModel : INotifyPropertyChanged
         ? $"Página {CurrentPage + 1} de {TotalPages} ({TotalElements} total)"
         : "Sin resultados";
 
+    #region Manejadores de eventos de sesión
+
+    private void OnSessionExpiringSoon(object? sender, bool isExpiring)
+    {
+        SessionExpiringSoon = isExpiring;
+
+        if (isExpiring)
+        {
+            StatusMessage = "⚠️ Tu sesión está por expirar";
+            AppLog.Warn("MainViewModel", "Sesión por expirar");
+        }
+        else
+        {
+            StatusMessage = "Sesión refrescada";
+            AppLog.Info("MainViewModel", "Sesión refrescada");
+        }
+    }
+
+    private void OnSessionRefreshed(object? sender, EventArgs e)
+    {
+        StatusMessage = "✅ Sesión refrescada automáticamente";
+        SessionExpiringSoon = false;
+        AppLog.Info("MainViewModel", "Token refrescado exitosamente");
+    }
+
+    private void OnSessionExpired(object? sender, EventArgs e)
+    {
+        IsAuthenticated = false;
+        SessionExpiringSoon = false;
+        CurrentUserInfo = string.Empty;
+        Usuarios = new List<Usuario>();
+        UsuariosFiltrados = new List<Usuario>();
+        Busqueda = string.Empty;
+
+        StatusMessage = "⏰ Tu sesión ha expirado";
+        AppLog.Warn("MainViewModel", "Sesión expirada");
+
+        Application.Current?.Dispatcher.Invoke(() =>
+        {
+            MessageBox.Show(
+                "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
+                "Sesión Expirada",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        });
+    }
+
+    #endregion
+
     public ICommand LoginCommand { get; }
     public ICommand LogoutCommand { get; }
     public ICommand LoadUsuariosCommand { get; }
@@ -259,6 +327,10 @@ public class MainViewModel : INotifyPropertyChanged
                 var user = _keycloakAuth.CurrentUser;
                 CurrentUserInfo = $"{user?.GivenName} {user?.FamilyName} ({user?.PreferredUsername})";
                 StatusMessage = "¡Autenticación exitosa!";
+
+                // Iniciar monitoreo de sesión
+                _sessionManager.StartSessionMonitoring(Application.Current?.MainWindow);
+
                 await LoadUsuariosAsync();
                 return true;
             }
@@ -286,6 +358,9 @@ public class MainViewModel : INotifyPropertyChanged
             var user = _keycloakAuth.CurrentUser;
             CurrentUserInfo = $"{user?.GivenName} {user?.FamilyName} ({user?.PreferredUsername})";
             StatusMessage = "Sesión activa detectada";
+
+            // Iniciar monitoreo de sesión
+            _sessionManager.StartSessionMonitoring(Application.Current?.MainWindow);
         }
         else
         {
@@ -450,8 +525,12 @@ public class MainViewModel : INotifyPropertyChanged
         {
             IsLoading = true;
 
+            // Detener monitoreo de sesión
+            _sessionManager.StopSessionMonitoring();
+
             _keycloakAuth.Logout();
             IsAuthenticated = false;
+            SessionExpiringSoon = false;
             CurrentUserInfo = string.Empty;
             Usuarios = new List<Usuario>();
             UsuariosFiltrados = new List<Usuario>();
